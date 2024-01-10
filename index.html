@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>jsPanel</title>
+    <!-- loading jsPanel css -->
+    <link rel="stylesheet" href="jspanel.css">
+</head>
+<body>
+
+<!-- Your HTML goes here -->
+
+<!-- loading jsPanel javascript -->
+<script src="jspanel.js"></script>
+<!-- optionally load jsPanel extensions -->
+<script src="extensions/contextmenu/jspanel.contextmenu.js"></script>
+<script src="extensions/hint/jspanel.hint.js"></script>
+<script src="extensions/modal/jspanel.modal.js"></script>
+<script src="extensions/tooltip/jspanel.tooltip.js"></script>
+<script src="extensions/dock/jspanel.dock.js"></script>
+<script src="extensions/layout/jspanel.layout.js"></script>
+
+<script>
+    // Create a demo jsPanel with 10 buttons
+    jsPanel.create({
+        headerTitle: 'Panel',
+        theme: 'dark',
+        content: generateButtons(10),
+        callback: function() {
+            this.content.style.padding = '10px';
+            // Add event listener to the buttons
+            const buttons = this.content.querySelectorAll('button');
+            buttons.forEach(button => {
+                button.addEventListener('click', handleButtonClick);
+            });
+        }
+    });
+
+    // Function to generate buttons
+    function generateButtons(count) {
+        let buttonsHTML = '';
+        for (let i = 1; i <= count; i++) {
+            buttonsHTML += `<button id="button${i}" style="color: white; background-color: black; border-radius: 7px; margin-right: 10px; margin-bottom: 10px;"> Button ${i} </button>`;
+        }
+        return buttonsHTML;
+    }
+
+    // Event handler for button clicks
+    function handleButtonClick(event) {
+        // Extract the button ID
+        const buttonId = event.target.id;
+        
+        // Define an object with button IDs as keys and corresponding code snippets as values
+        const codeSnippets = {
+            button1: 'console.log("Code for button 1");',  // Example code for button 1
+            button2: 'alert("Code for button 2");',       // Example code for button 2
+            // Add entries for other buttons as needed
+        };
+
+        // Execute the code snippet for the clicked button
+        if (codeSnippets[buttonId]) {
+            eval(codeSnippets[buttonId]);  // Using eval for simplicity, but use caution with dynamic code execution
+        }
+    }
+</script>
+</body>
+</html>
