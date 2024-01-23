@@ -1,0 +1,156 @@
+function enableToggleEditing() {
+  var isEditable = false;
+
+  var toggleEditing = function() {
+    isEditable = !isEditable;
+    document.body.contentEditable = isEditable ? 'true' : 'false';
+    document.designMode = isEditable ? 'on' : 'off';
+  };
+
+  var handleKeyPress = function(event) {
+    if (event.key === 'v' || event.key === 'V') {
+      toggleEditing();
+    }
+  };
+
+  document.addEventListener('keydown', handleKeyPress);
+}
+function setupScriptFunctions() {
+  var outputFrame = parent.outputFrame;
+  var inputFrame = parent.inputFrame;
+  var framesetElement = parent.document.documentElement.getElementsByTagName("frameset")[0];
+
+  var savedRows;
+
+  function print(s, c) {
+    var outputFrame = parent.outputFrame;
+    var doc = outputFrame.document;
+
+    var newdiv = doc.createElement("div");
+    newdiv.appendChild(doc.createTextNode(s));
+    if (c)
+      newdiv.style.color = c;
+    doc.body.appendChild(newdiv);
+  }
+
+  function handleError(er, file, lineNumber) {
+    print("Error on line " + lineNumber + ": " + er, "red");
+
+    var ta = inputFrame.document.getElementById("input");
+    var lines = ta.value.split("\n");
+    var cc = 0;
+    var i;
+    for (i = 0; i < (lineNumber - 1); ++i)
+      cc += lines[i].length + 1;
+
+    if (ta.value.split("\r").length > 1)
+      cc -= lineNumber - 1;
+
+    if (document.selection) {
+      var sel = ta.createTextRange();
+      sel.moveStart("character", cc);
+      sel.collapse();
+      sel.moveEnd("character", lines[i].length);
+      sel.select();
+    } else {
+      ta.selectionStart = cc;
+      ta.selectionEnd = cc + lines[i].length;
+    }
+  }
+
+  function showHideOutput() {
+    if (outputFrame.document.body.clientHeight > 100) {
+      savedRows = framesetElement.rows;
+      framesetElement.rows = "25,*,0";
+    } else {
+      if (savedRows) {
+        framesetElement.rows = savedRows;
+        savedRows = null;
+      } else {
+        framesetElement.rows = "25,*,*";
+      }
+    }
+  }
+
+  function refocus() {
+    inputFrame.document.getElementById("input").focus();
+  }
+
+  function clearOutput() {
+    var b = outputFrame.document.body;
+    while (b.firstChild)
+      b.removeChild(b.firstChild);
+  }
+
+  function stripLineBreaks(s) {
+    return s.replace(/\n/g, "").replace(/\r/g, "");
+  }
+
+  function execute() {
+    var js = inputFrame.document.getElementById("input").value;
+
+    var useOpener = parent.opener && !parent.opener.closed;
+    var oldStyle = !!document.all;
+
+    print("Running" + (useOpener ? " in bookmarklet mode" : "") + (oldStyle ? " in make-IE-happy mode" : "") + "...", "orange");
+
+    if (useOpener)
+      executeWithJSURL(js, parent.opener);
+    else if (oldStyle)
+      executeWithDW(js, execFrame);
+    else
+      executeWithJSURL(js, execFrame);
+  }
+
+  function executeWithDW(js, win) {
+    win.document.open();
+    win.inputFrame = inputFrame;
+    win.outputFrame = outputFrame;
+    win.document.write(
+      stripLineBreaks(
+        '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">' +
+        '<html><head><title>execFrame<\/title><script type="text/javascript">' +
+        print +
+        handleError +
+        "window.onerror = handleError;" +
+        "<\/script><\/head>"
+      )
+      + '<body><script type="text/javascript">' +
+      js +
+      "<\/script><\/body><\/html>"
+    );
+    win.document.close();
+  }
+
+  function executeWithJSURL(js, win) {
+    js = "(function(){ " + js + " \n })()";
+
+    win.print = print;
+    win.onerror = handleError;
+
+    win.location.href = 'javascript:eval(decodeURIComponent("' + encodeURIComponent(encodeURIComponent(js)) + '")); void 0;';
+
+    refocus();
+  }
+
+  function makeUserScript(userScriptLink) {
+    userScriptLink.href =
+      "data:text/javascript;charset=utf-8," +
+      encodeURIComponent(inputFrame.document.getElementById("input").value + "//.user.js");
+  }
+
+  // Additional setup or initialization code can be added here
+
+  // Example: Call the execute function on page load
+  // execute();
+}
+    <script>
+        function deleteCookies() {
+            var bookmarkletCode = "(function(){C=document.cookie.split('; ');for(d='.'+location.host;d;d=(''+d).substr(1).match(/\\..*$/))for(sl=0;sl<2;++sl)for(p='/'+location.pathname;p;p=p.substring(0,p.lastIndexOf('/')))for(i in C)if(c=C[i]){document.cookie=c+'; domain='+d.slice(sl)+'; path='+p.slice(1)+'/'+'; expires='+new Date((new Date).getTime()-1e11).toGMTString()}})()";
+            var scriptTag = document.createElement('script');
+            scriptTag.innerHTML = decodeURIComponent(bookmarkletCode);
+            document.body.appendChild(scriptTag);
+        }
+
+        document.getElementById('deleteCookiesButton').addEventListener('click', deleteCookies);
+    </script>
